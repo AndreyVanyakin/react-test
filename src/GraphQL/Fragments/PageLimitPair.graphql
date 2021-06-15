@@ -1,0 +1,4 @@
+fragment PageLimitPair on PageLimitPair {
+  page
+  limit
+}

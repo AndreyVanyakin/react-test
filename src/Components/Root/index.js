@@ -58,9 +58,15 @@ function Root() {
     setPage(seletedPage)
   }
 
+  // console.log('data', data)
+
   const posts = data?.posts.data || []
 
   const totalPosts = data?.posts?.meta?.totalCount
+  const firstPage = data?.posts?.links?.first?.page
+  const nextPage = data?.posts?.links?.next?.page
+  const prevPage = data?.posts?.links?.prev?.page
+  const lastPage = data?.posts?.links?.last?.page
   const totalPages = totalPosts / limit
   const pageNos = Array.from({ length: totalPages }, (v, i) => i + 1)
 
@@ -70,9 +76,18 @@ function Root() {
         <h4>Need to add pagination</h4>
         {loading
           ? 'Loading...'
-          : posts.map(post => (
+          : posts.map((post, index) => (
               <Post key={post.id} mx={4}>
-                <NavLink href={POST(post.id)} to={POST(post.id)}>
+                <NavLink
+                  href={POST(post.id)}
+                  to={{
+                    pathname: POST(post.id),
+                    state: {
+                      prevPostId: posts[index - 1]?.id,
+                      nextPostId: posts[index + 1]?.id,
+                    },
+                  }}
+                >
                   {post.title}
                 </NavLink>
                 <PostAuthor>by {post.user.name}</PostAuthor>
@@ -97,16 +112,44 @@ function Root() {
                 </label>
               </div>
               <label>Page:</label>
-              <div>
-                {pageNos.map(pageNo => (
-                  <ToggleButton
-                    isActive={page === pageNo}
-                    key={pageNo}
-                    value={pageNo}
-                    onClick={handlePageSelect}
-                  />
-                ))}
-              </div>
+              <br />
+              <button
+                disabled={typeof firstPage === 'undefined'}
+                type="button"
+                onClick={() => handlePageSelect(firstPage)}
+              >
+                First
+              </button>
+              <button
+                disabled={typeof prevPage === 'undefined'}
+                type="button"
+                onClick={() => handlePageSelect(prevPage)}
+              >
+                Prev
+              </button>
+              <button
+                disabled={typeof nextPage === 'undefined'}
+                type="button"
+                onClick={() => handlePageSelect(nextPage)}
+              >
+                Next
+              </button>
+              <button
+                disabled={typeof lastPage === 'undefined'}
+                type="button"
+                onClick={() => handlePageSelect(lastPage)}
+              >
+                Last
+              </button>
+              <br />
+              {pageNos.map(pageNo => (
+                <ToggleButton
+                  isActive={page === pageNo}
+                  key={pageNo}
+                  value={pageNo}
+                  onClick={handlePageSelect}
+                />
+              ))}
             </div>
           )}
         </div>

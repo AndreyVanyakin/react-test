@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react'
-import { useHistory, useRouteMatch } from 'react-router'
+import { useHistory, useLocation, useRouteMatch } from 'react-router'
 import { sortableContainer, sortableElement } from 'react-sortable-hoc'
 
 import { useQuery } from '@apollo/client'
@@ -7,7 +7,7 @@ import arrayMove from 'array-move'
 
 import postQuery from 'GraphQL/Queries/post.graphql'
 
-import { ROOT } from 'Router/routes'
+import { POST, ROOT } from 'Router/routes'
 
 import {
   Back,
@@ -30,11 +30,17 @@ const SortableItem = sortableElement(({ value }) => (
 function Post() {
   const [comments, setComments] = useState([])
   const history = useHistory()
+  const location = useLocation()
   const {
     params: { postId },
   } = useRouteMatch()
 
+  // Мне не нравится это решение, лучше конечно иметь соседей в результате запроса Post
+  const prevPostId = location?.state?.prevPostId || Number(postId) - 1
+  const nextPostId = location?.state?.nextPostId || Number(postId) + 1
+
   const handleClick = () => history.push(ROOT)
+  const handleNavigate = pid => history.push(POST(pid))
 
   const handleSortEnd = ({ oldIndex, newIndex }) => {
     setComments(arrayMove(comments, oldIndex, newIndex))
@@ -64,7 +70,14 @@ function Post() {
               <PostAuthor>by {post.user.name}</PostAuthor>
               <PostBody mt={2}>{post.body}</PostBody>
             </PostContainer>
-            <div>Next/prev here</div>
+            <div>
+              <button type="button" onClick={() => handleNavigate(prevPostId)}>
+                Prev
+              </button>
+              <button type="button" onClick={() => handleNavigate(nextPostId)}>
+                Next
+              </button>
+            </div>
           </Column>
 
           <Column>
