@@ -5,6 +5,8 @@ import { useQuery } from '@apollo/client'
 import faker from 'faker'
 import { nanoid } from 'nanoid'
 
+import ToggleButton from 'Components/ToggleButton'
+
 import postsQuery from 'GraphQL/Queries/posts.graphql'
 
 import { POST } from 'Router/routes'
@@ -13,8 +15,12 @@ import { Column, Container, Post, PostAuthor, PostBody } from './styles'
 
 import ExpensiveTree from '../ExpensiveTree'
 
+const AVAILABLE_LIMITS = [5, 10, 20]
+
 function Root() {
   const [count, setCount] = useState(0)
+  const [page, setPage] = useState(1)
+  const [limit, setLimit] = useState(AVAILABLE_LIMITS[0])
   const [fields, setFields] = useState([
     {
       name: faker.name.findName(),
@@ -24,7 +30,7 @@ function Root() {
   ])
 
   const [value, setValue] = useState('')
-  const { data, loading } = useQuery(postsQuery)
+  const { data, loading } = useQuery(postsQuery, { variables: { page, limit } })
 
   function handlePush() {
     setFields([
@@ -43,7 +49,20 @@ function Root() {
     }, 2500)
   }
 
+  function handleLimitSelect(selectedLimit) {
+    setLimit(selectedLimit)
+    setPage(1)
+  }
+
+  function handlePageSelect(seletedPage) {
+    setPage(seletedPage)
+  }
+
   const posts = data?.posts.data || []
+
+  const totalPosts = data?.posts?.meta?.totalCount
+  const totalPages = totalPosts / limit
+  const pageNos = Array.from({ length: totalPages }, (v, i) => i + 1)
 
   return (
     <Container>
@@ -52,7 +71,7 @@ function Root() {
         {loading
           ? 'Loading...'
           : posts.map(post => (
-              <Post mx={4}>
+              <Post key={post.id} mx={4}>
                 <NavLink href={POST(post.id)} to={POST(post.id)}>
                   {post.title}
                 </NavLink>
@@ -60,7 +79,37 @@ function Root() {
                 <PostBody>{post.body}</PostBody>
               </Post>
             ))}
-        <div>Pagination here</div>
+        <div>
+          {!isNaN(totalPosts) && (
+            <div>
+              <div>
+                <label>
+                  Posts per Page:
+                  <br />
+                  {AVAILABLE_LIMITS.map(postsLimit => (
+                    <ToggleButton
+                      isActive={postsLimit === limit}
+                      key={postsLimit}
+                      value={postsLimit}
+                      onClick={handleLimitSelect}
+                    />
+                  ))}
+                </label>
+              </div>
+              <label>Page:</label>
+              <div>
+                {pageNos.map(pageNo => (
+                  <ToggleButton
+                    isActive={page === pageNo}
+                    key={pageNo}
+                    value={pageNo}
+                    onClick={handlePageSelect}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
       </Column>
       <Column>
         <h4>Slow rendering</h4>
