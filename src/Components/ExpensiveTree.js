@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { memo } from 'react'
 
 function ExpensiveTree() {
   const now = performance.now()
@@ -8,4 +8,4 @@ function ExpensiveTree() {
   return <div />
 }
 
-export default ExpensiveTree
+export default memo(ExpensiveTree)
