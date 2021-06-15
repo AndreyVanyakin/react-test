@@ -5,6 +5,8 @@ import { useQuery } from '@apollo/client'
 import faker from 'faker'
 import { nanoid } from 'nanoid'
 
+import ToggleButton from 'Components/ToggleButton'
+
 import postsQuery from 'GraphQL/Queries/posts.graphql'
 
 import { POST } from 'Router/routes'
@@ -13,20 +15,32 @@ import { Column, Container, Post, PostAuthor, PostBody } from './styles'
 
 import ExpensiveTree from '../ExpensiveTree'
 
+const AVAILABLE_LIMITS = [5, 10, 20]
+
 function Root() {
   const [count, setCount] = useState(0)
+  const [page, setPage] = useState(1)
+  const [limit, setLimit] = useState(AVAILABLE_LIMITS[0])
   const [fields, setFields] = useState([
     {
       name: faker.name.findName(),
       id: nanoid(),
+      inputValue: '',
     },
   ])
 
   const [value, setValue] = useState('')
-  const { data, loading } = useQuery(postsQuery)
+  const { data, loading } = useQuery(postsQuery, { variables: { page, limit } })
 
   function handlePush() {
-    setFields([{ name: faker.name.findName(), id: nanoid() }, ...fields])
+    setFields([
+      ...fields,
+      { name: faker.name.findName(), id: nanoid(), inputValue: '' },
+    ])
+  }
+
+  function handleFormInput(inputValue, id) {
+    setFields(ps => ps.map(f => (f.id === id ? { ...f, inputValue } : f)))
   }
 
   function handleAlertClick() {
@@ -35,7 +49,26 @@ function Root() {
     }, 2500)
   }
 
+  function handleLimitSelect(selectedLimit) {
+    setLimit(selectedLimit)
+    setPage(1)
+  }
+
+  function handlePageSelect(seletedPage) {
+    setPage(seletedPage)
+  }
+
+  // console.log('data', data)
+
   const posts = data?.posts.data || []
+
+  const totalPosts = data?.posts?.meta?.totalCount
+  const firstPage = data?.posts?.links?.first?.page
+  const nextPage = data?.posts?.links?.next?.page
+  const prevPage = data?.posts?.links?.prev?.page
+  const lastPage = data?.posts?.links?.last?.page
+  const totalPages = totalPosts / limit
+  const pageNos = Array.from({ length: totalPages }, (v, i) => i + 1)
 
   return (
     <Container>
@@ -43,16 +76,83 @@ function Root() {
         <h4>Need to add pagination</h4>
         {loading
           ? 'Loading...'
-          : posts.map(post => (
-              <Post mx={4}>
-                <NavLink href={POST(post.id)} to={POST(post.id)}>
+          : posts.map((post, index) => (
+              <Post key={post.id} mx={4}>
+                <NavLink
+                  href={POST(post.id)}
+                  to={{
+                    pathname: POST(post.id),
+                    state: {
+                      prevPostId: posts[index - 1]?.id,
+                      nextPostId: posts[index + 1]?.id,
+                    },
+                  }}
+                >
                   {post.title}
                 </NavLink>
                 <PostAuthor>by {post.user.name}</PostAuthor>
                 <PostBody>{post.body}</PostBody>
               </Post>
             ))}
-        <div>Pagination here</div>
+        <div>
+          {!isNaN(totalPosts) && (
+            <div>
+              <div>
+                <label>
+                  Posts per Page:
+                  <br />
+                  {AVAILABLE_LIMITS.map(postsLimit => (
+                    <ToggleButton
+                      isActive={postsLimit === limit}
+                      key={postsLimit}
+                      value={postsLimit}
+                      onClick={handleLimitSelect}
+                    />
+                  ))}
+                </label>
+              </div>
+              <label>Page:</label>
+              <br />
+              <button
+                disabled={typeof firstPage === 'undefined'}
+                type="button"
+                onClick={() => handlePageSelect(firstPage)}
+              >
+                First
+              </button>
+              <button
+                disabled={typeof prevPage === 'undefined'}
+                type="button"
+                onClick={() => handlePageSelect(prevPage)}
+              >
+                Prev
+              </button>
+              <button
+                disabled={typeof nextPage === 'undefined'}
+                type="button"
+                onClick={() => handlePageSelect(nextPage)}
+              >
+                Next
+              </button>
+              <button
+                disabled={typeof lastPage === 'undefined'}
+                type="button"
+                onClick={() => handlePageSelect(lastPage)}
+              >
+                Last
+              </button>
+              <br />
+              {pageNos.map(pageNo => (
+                <ToggleButton
+                  isActive={page === pageNo}
+                  key={pageNo}
+                  value={pageNo}
+                  onClick={handlePageSelect}
+                />
+              ))}
+            </div>
+          )}
+        </div>
       </Column>
       <Column>
         <h4>Slow rendering</h4>
@@ -83,10 +183,16 @@ function Root() {
           Add more
         </button>
         <ol>
-          {fields.map((field, index) => (
-            <li key={index}>
+          {fields.map(field => (
+            <li key={field.id}>
               {field.name}:<br />
-              <input type="text" />
+              <input
+                type="text"
+                value={field.inputValue}
+                onChange={({ target }) =>
+                  handleFormInput(target.value, field.id)
+                }
+              />
             </li>
           ))}
         </ol>
