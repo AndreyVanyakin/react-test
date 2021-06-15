@@ -19,6 +19,7 @@ function Root() {
     {
       name: faker.name.findName(),
       id: nanoid(),
+      inputValue: '',
     },
   ])
 
@@ -26,7 +27,14 @@ function Root() {
   const { data, loading } = useQuery(postsQuery)
 
   function handlePush() {
-    setFields([{ name: faker.name.findName(), id: nanoid() }, ...fields])
+    setFields([
+      ...fields,
+      { name: faker.name.findName(), id: nanoid(), inputValue: '' },
+    ])
+  }
+
+  function handleFormInput(inputValue, id) {
+    setFields(ps => ps.map(f => (f.id === id ? { ...f, inputValue } : f)))
   }
 
   function handleAlertClick() {
@@ -83,10 +91,16 @@ function Root() {
           Add more
         </button>
         <ol>
-          {fields.map((field, index) => (
-            <li key={index}>
+          {fields.map(field => (
+            <li key={field.id}>
               {field.name}:<br />
-              <input type="text" />
+              <input
+                type="text"
+                value={field.inputValue}
+                onChange={({ target }) =>
+                  handleFormInput(target.value, field.id)
+                }
+              />
             </li>
           ))}
         </ol>
